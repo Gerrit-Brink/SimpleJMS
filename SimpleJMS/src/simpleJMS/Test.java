@@ -22,10 +22,10 @@ public class Test{
 			oneMoreQueue = new SimpleJMS(System.getProperty("queue.onemore.location"));
 			
 			//Register event handlers in-line
-			myQueue.registerEventHandler(EVENT_NOTIFY_CLIENT, (SimpleJMSMessage)->{
-				System.out.println("EVENT ONE FIRED = " + EVENT_NOTIFY_CLIENT);
-			}).registerEventHandler(EVENT_SEND_EMAIL, (SimpleJMSMessage)->{
-				System.out.println("EVENT TWO FIRED = " + EVENT_SEND_EMAIL);
+			myQueue.registerEventHandler(EVENT_NOTIFY_CLIENT, jmsMsg->{
+				System.out.println("EVENT ONE FIRED = " + jmsMsg.getType());
+			}).registerEventHandler(EVENT_SEND_EMAIL, jmsMsg->{
+				System.out.println("EVENT TWO FIRED = " + jmsMsg.getType());
 			});
 			
 			//Register separated event handlers for larger code sets, RemindMeLaterClass implemented lower down in this test class
@@ -55,7 +55,7 @@ public class Test{
 }
 
 class RemindMeLaterClass implements SimpleJMSEventHandler{
-	public void onMessage(SimpleJMSMessage msg){
-		System.out.println("EVENT THREE FIRED = EVENT_REMIND_ME_LATER");
+	public void onMessage(SimpleJMSMessage jmsMsg){
+		System.out.println("EVENT THREE FIRED = " + jmsMsg.getType());
 	}
 }
