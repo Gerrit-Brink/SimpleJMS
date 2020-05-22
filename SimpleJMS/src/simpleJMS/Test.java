@@ -5,27 +5,29 @@ public class Test{
 		try{
 			SimpleJMS j = new SimpleJMS("C:/Users/JDev/Desktop/q");
 			
-			j.registerProcessor("1", (SimpleJMSMessage)->{
+			j.registerProcessor("EventType1", (SimpleJMSMessage)->{
 				System.out.println("1");
 			});
-			j.registerProcessor("2", (SimpleJMSMessage)->{
+			j.registerProcessor("EventType2", (SimpleJMSMessage)->{
 				System.out.println("2");
 			});
-			j.registerProcessor("3", (SimpleJMSMessage)->{
+			j.registerProcessor("EventType3", (SimpleJMSMessage)->{
 				System.out.println("3");
 			});
 			
-			j.addMessage(createMsg("1", 0));
-			j.addMessage(createMsg("2", 0));
-			j.addMessage(createMsg("3", 500));
-			j.addMessage(createMsg("3", 2000));
+			j.addMessage(createMsg("EventType1", 0));
+			j.addMessage(createMsg("EventType2", 0));
+			j.addMessage(createMsg("EventType3", 500));
+			j.addMessage(createMsg("EventType3", 2000));
 			
-			j.addMessage(createMsg("2", 0));
-			j.addMessage(createMsg("1", 0));
-			j.addMessage(createMsg("1", 0));
-			j.addMessage(createMsg("1", 0));
+			j.addMessage(createMsg("EventType2", 0));
+			j.addMessage(createMsg("EventType1", 100));
+			j.addMessage(createMsg("EventType1", 200));
+			j.addMessage(createMsg("EventType1", 0));
 			
 			j.start();
+			
+			//j.stop();
 			
 		}catch(Exception e){
 			e.printStackTrace();
