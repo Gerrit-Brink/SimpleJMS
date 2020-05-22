@@ -70,15 +70,16 @@ public class SimpleJMS{
 			queueMessage(fileName);
 	}
 	
-	public void registerProcessor(String type, SimpleJMSProcessor proc){
-		msgProcessor.registerProcessor(type, proc);
+	public SimpleJMS registerEventHandler(String type, SimpleJMSEventHandler proc){
+		msgProcessor.registerEventHandler(type, proc);
+		return this;
 	}
 }
 
 class MessageProcessorThread extends Thread{
 	private Path queueLocation;
 	private LinkedBlockingQueue<Path> messagesToProcess;
-	private Map<String, SimpleJMSProcessor> messageProcessors = new ConcurrentHashMap<>();
+	private Map<String, SimpleJMSEventHandler> eventHandlers = new ConcurrentHashMap<>();
 	public MessageProcessorThread(Path l){
 		queueLocation = l;
 	}
@@ -86,8 +87,8 @@ class MessageProcessorThread extends Thread{
 		messagesToProcess = q;
 		return this;
 	}
-	public void registerProcessor(String type, SimpleJMSProcessor proc){
-		messageProcessors.put(type, proc);
+	public void registerEventHandler(String type, SimpleJMSEventHandler proc){
+		eventHandlers.put(type, proc);
 	}
 	public void run(){
 		try{
@@ -95,7 +96,7 @@ class MessageProcessorThread extends Thread{
 			while(fileName != null){
 				Path fullMsgPath = queueLocation.resolve(fileName);
 				SimpleJMSMessage msg = (SimpleJMSMessage)Util.readObject(fullMsgPath);
-				messageProcessors.get(msg.getType()).onMessage(msg);
+				eventHandlers.get(msg.getType()).onMessage(msg);
 				Files.delete(fullMsgPath);
 				
 				fileName = messagesToProcess.take();

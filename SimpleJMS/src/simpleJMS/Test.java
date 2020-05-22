@@ -1,44 +1,61 @@
 package simpleJMS;
 
 public class Test{
+	
+	//Set some System Properties, this would typically be done outside the web/app server in a config file somewhere
+	static{
+		System.setProperty("queue.another.location", "C:/Users/JDev/Desktop/q2");
+		System.setProperty("queue.onemore.location", "C:/Users/JDev/Desktop/q3");
+	}
+	
+	private static SimpleJMS myQueue, anotherQueue, oneMoreQueue;//Define as many as you want, each has it's own execution thread
+	
+	private static final String EVENT_NOTIFY_CLIENT 	= "EVENT_NOTIFY_CLIENT",
+								EVENT_SEND_EMAIL		= "EVENT_SEND_EMAIL",
+								EVENT_REMIND_ME_LATER 	= "EVENT_REMIND_ME_LATER";
+	
 	public static void main(String[] args){
 		try{
-			SimpleJMS j = new SimpleJMS("C:/Users/JDev/Desktop/q");
+			//Initialize the JMS with a storage location for message persistence, create as many as you want
+			myQueue 	 = new SimpleJMS("C:/Users/JDev/Desktop/q");
+			anotherQueue = new SimpleJMS(System.getProperty("queue.another.location"));
+			oneMoreQueue = new SimpleJMS(System.getProperty("queue.onemore.location"));
 			
-			j.registerProcessor("EventType1", (SimpleJMSMessage)->{
-				System.out.println("1");
+			//Register event handlers in-line
+			myQueue.registerEventHandler(EVENT_NOTIFY_CLIENT, (SimpleJMSMessage)->{
+				System.out.println("EVENT ONE FIRED = " + EVENT_NOTIFY_CLIENT);
+			}).registerEventHandler(EVENT_SEND_EMAIL, (SimpleJMSMessage)->{
+				System.out.println("EVENT TWO FIRED = " + EVENT_SEND_EMAIL);
 			});
-			j.registerProcessor("EventType2", (SimpleJMSMessage)->{
-				System.out.println("2");
-			});
-			j.registerProcessor("EventType3", (SimpleJMSMessage)->{
-				System.out.println("3");
-			});
 			
-			j.addMessage(createMsg("EventType1", 0));
-			j.addMessage(createMsg("EventType2", 0));
-			j.addMessage(createMsg("EventType3", 500));
-			j.addMessage(createMsg("EventType3", 2000));
+			//Register separated event handlers for larger code sets, RemindMeLaterClass implemented lower down in this test class
+			myQueue.registerEventHandler(EVENT_REMIND_ME_LATER, new RemindMeLaterClass());
 			
-			j.addMessage(createMsg("EventType2", 0));
-			j.addMessage(createMsg("EventType1", 100));
-			j.addMessage(createMsg("EventType1", 200));
-			j.addMessage(createMsg("EventType1", 0));
+			//Add Messages to Queue, the queue hasn't started here so they will be persisted to disk
+			myQueue.addMessage(new SimpleJMSMessage(EVENT_NOTIFY_CLIENT));
+			myQueue.addMessage(new SimpleJMSMessage(EVENT_SEND_EMAIL));
+			myQueue.addMessage(new SimpleJMSMessage(EVENT_REMIND_ME_LATER, System.currentTimeMillis() + 500));
+			myQueue.addMessage(new SimpleJMSMessage(EVENT_SEND_EMAIL));
 			
-			j.start();
+			//Start the Queue
+			myQueue.start();
 			
-			//j.stop();
+			//Add more messages to the Queue
+			myQueue.addMessage(new SimpleJMSMessage(EVENT_NOTIFY_CLIENT,   System.currentTimeMillis() + 100));
+			myQueue.addMessage(new SimpleJMSMessage(EVENT_REMIND_ME_LATER, System.currentTimeMillis() + 5000));
+			myQueue.addMessage(new SimpleJMSMessage(EVENT_NOTIFY_CLIENT,   System.currentTimeMillis() + 200));
+			myQueue.addMessage(new SimpleJMSMessage(EVENT_NOTIFY_CLIENT));
+			
+			//myQueue.stop();
 			
 		}catch(Exception e){
 			e.printStackTrace();
 		}
 	}
-	
-	private static SimpleJMSMessage createMsg(String type, long delay){
-		SimpleJMSMessage m = new SimpleJMSMessage(type);
-		if(delay > 0)
-			m.setFireOn(System.currentTimeMillis() + delay);
-		
-		return m;
+}
+
+class RemindMeLaterClass implements SimpleJMSEventHandler{
+	public void onMessage(SimpleJMSMessage msg){
+		System.out.println("EVENT THREE FIRED = EVENT_REMIND_ME_LATER");
 	}
 }

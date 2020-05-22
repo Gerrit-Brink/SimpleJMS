@@ -1,5 +1,5 @@
 package simpleJMS;
 
-public interface SimpleJMSProcessor{
+public interface SimpleJMSEventHandler{
 	public void onMessage(SimpleJMSMessage msg);
 }
