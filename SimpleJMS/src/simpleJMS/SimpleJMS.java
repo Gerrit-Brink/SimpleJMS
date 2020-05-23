@@ -5,6 +5,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -24,19 +25,24 @@ public class SimpleJMS{
 	private MessageProcessorThread msgProcessor;
 	private Map<Enum<?>, SimpleJMSEventHandler> eventHandlers;
 	
-	public SimpleJMS(String location) throws Exception{
+	public SimpleJMS(String location) throws IOException{
 		queueLocation = Files.createDirectories(Paths.get(location));
 		msgProcessor = new MessageProcessorThread();
 		eventHandlers = new ConcurrentHashMap<>();
 	}
 	
-	public void start() throws Exception{
+	public synchronized void start() throws IOException, InterruptedException{
+		if(msgsToProcess != null)//Prevent multiple startups without the JMS being stopped first
+			return;
+		
 		msgsToProcess = new LinkedBlockingQueue<>();
-		msgProcessor.setMessagesToProcess(msgsToProcess).start();
+		msgProcessor.start();
 		timer = new Timer("SimpleJMS Timer");
 		
-		for(Path p : Files.newDirectoryStream(queueLocation))
-			queueMessage(p.getFileName().toString());
+		try(DirectoryStream<Path> s = Files.newDirectoryStream(queueLocation)){
+			for(Path p : s)
+				queueMessage(p.getFileName().toString());
+		}
 	}
 	
 	private void queueMessage(String fileName) throws InterruptedException{
@@ -76,21 +82,13 @@ public class SimpleJMS{
 	}
 	
 	class MessageProcessorThread extends Thread{
-		private LinkedBlockingQueue<String> messagesToProcess;
-		public MessageProcessorThread setMessagesToProcess(LinkedBlockingQueue<String> q) {
-			messagesToProcess = q;
-			return this;
-		}
 		public void run(){
 			try{
-				String fileName = messagesToProcess.take();
-				while(fileName != null){
+				for(String fileName = msgsToProcess.take(); fileName != null; fileName = msgsToProcess.take()){
 					Path fullMsgPath = queueLocation.resolve(fileName);
 					SimpleJMSMessage msg = (SimpleJMSMessage)Util.readObject(fullMsgPath);
 					eventHandlers.get(msg.getEventType()).onMessage(msg);
 					Files.delete(fullMsgPath);
-					
-					fileName = messagesToProcess.take();
 				}
 			}catch(InterruptedException e){
 				System.out.println("SimpleJMS.ProcessorThread Stopping for location = " + queueLocation);
