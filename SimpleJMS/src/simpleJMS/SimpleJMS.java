@@ -19,29 +19,29 @@ import java.util.concurrent.LinkedBlockingQueue;
 public class SimpleJMS{
 	
 	private Path queueLocation;
-	private LinkedBlockingQueue<Path> msgsToProcess;
+	private LinkedBlockingQueue<String> msgsToProcess;
 	private Timer timer;
 	private MessageProcessorThread msgProcessor;
+	private Map<Enum<?>, SimpleJMSEventHandler> eventHandlers;
 	
 	public SimpleJMS(String location) throws Exception{
-		queueLocation = Paths.get(location);
-		if(!Files.exists(queueLocation))
-			Files.createDirectory(queueLocation);
-		
-		msgProcessor = new MessageProcessorThread(queueLocation);
+		queueLocation = Files.createDirectories(Paths.get(location));
+		msgProcessor = new MessageProcessorThread();
+		eventHandlers = new ConcurrentHashMap<>();
 	}
 	
 	public void start() throws Exception{
-		msgsToProcess = new LinkedBlockingQueue<Path>();
-		msgProcessor.setMessageToProcess(msgsToProcess).start();
+		msgsToProcess = new LinkedBlockingQueue<>();
+		msgProcessor.setMessagesToProcess(msgsToProcess).start();
 		timer = new Timer("SimpleJMS Timer");
+		
 		for(Path p : Files.newDirectoryStream(queueLocation))
-			queueMessage(p.getFileName());
+			queueMessage(p.getFileName().toString());
 	}
 	
-	private void queueMessage(Path fileName) throws InterruptedException{
-		long executeOn = new Long(fileName.toString().split("_")[0]);
-		if(executeOn <= System.currentTimeMillis()){
+	private void queueMessage(String fileName) throws InterruptedException{
+		long executeOn = new Long(fileName.substring(0, fileName.indexOf("_")));
+		if(System.currentTimeMillis() >= executeOn){
 			msgsToProcess.put(fileName);
 		}else{
 			timer.schedule(new TimerTask(){
@@ -64,52 +64,45 @@ public class SimpleJMS{
 	}
 	
 	public void addMessage(SimpleJMSMessage msg) throws Exception{
-		Path fileName = Paths.get(msg.getFireOn() + "_" + UUID.randomUUID().toString().replace("-", ""));
+		String fileName = msg.getFireOn() + "_" + UUID.randomUUID();
 		Util.writeObject(msg, queueLocation.resolve(fileName));
 		if(msgsToProcess != null)//If the msgsToProcess is null then it means the Queue hasn't been started
 			queueMessage(fileName);
 	}
 	
-	public SimpleJMS registerEventHandler(String type, SimpleJMSEventHandler proc){
-		msgProcessor.registerEventHandler(type, proc);
+	public SimpleJMS registerEventHandler(Enum<?> eventType, SimpleJMSEventHandler proc){
+		eventHandlers.put(eventType, proc);
 		return this;
 	}
-}
-
-class MessageProcessorThread extends Thread{
-	private Path queueLocation;
-	private LinkedBlockingQueue<Path> messagesToProcess;
-	private Map<String, SimpleJMSEventHandler> eventHandlers = new ConcurrentHashMap<>();
-	public MessageProcessorThread(Path l){
-		queueLocation = l;
-	}
-	public MessageProcessorThread setMessageToProcess(LinkedBlockingQueue<Path> q){
-		messagesToProcess = q;
-		return this;
-	}
-	public void registerEventHandler(String type, SimpleJMSEventHandler proc){
-		eventHandlers.put(type, proc);
-	}
-	public void run(){
-		try{
-			Path fileName = messagesToProcess.take();
-			while(fileName != null){
-				Path fullMsgPath = queueLocation.resolve(fileName);
-				SimpleJMSMessage msg = (SimpleJMSMessage)Util.readObject(fullMsgPath);
-				eventHandlers.get(msg.getType()).onMessage(msg);
-				Files.delete(fullMsgPath);
-				
-				fileName = messagesToProcess.take();
+	
+	class MessageProcessorThread extends Thread{
+		private LinkedBlockingQueue<String> messagesToProcess;
+		public MessageProcessorThread setMessagesToProcess(LinkedBlockingQueue<String> q) {
+			messagesToProcess = q;
+			return this;
+		}
+		public void run(){
+			try{
+				String fileName = messagesToProcess.take();
+				while(fileName != null){
+					Path fullMsgPath = queueLocation.resolve(fileName);
+					SimpleJMSMessage msg = (SimpleJMSMessage)Util.readObject(fullMsgPath);
+					eventHandlers.get(msg.getType()).onMessage(msg);
+					Files.delete(fullMsgPath);
+					
+					fileName = messagesToProcess.take();
+				}
+			}catch(InterruptedException e){
+				System.out.println("SimpleJMS.ProcessorThread Stopping for location = " + queueLocation);
+			}catch(Exception e){
+				e.printStackTrace();
 			}
-		}catch(InterruptedException e){
-			System.out.println("SimpleJMS.ProcessorThread Stopping for location = " + queueLocation);
-		}catch(Exception e){
-			e.printStackTrace();
 		}
 	}
 }
 
 class Util{
+
 	static void writeObject(Object o, Path p) throws IOException{
 		try(FileOutputStream fos = new FileOutputStream(p.toString());
 				ObjectOutputStream oos = new ObjectOutputStream(fos)){

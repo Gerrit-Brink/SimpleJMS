@@ -10,9 +10,11 @@ public class Test{
 	
 	private static SimpleJMS myQueue, anotherQueue, oneMoreQueue;//Define as many as you want, each has it's own execution thread
 	
-	private static final String EVENT_NOTIFY_CLIENT 	= "EVENT_NOTIFY_CLIENT",
-								EVENT_SEND_EMAIL		= "EVENT_SEND_EMAIL",
-								EVENT_REMIND_ME_LATER 	= "EVENT_REMIND_ME_LATER";
+	enum EVENT{
+		NOTIFY_CLIENT,
+		SEND_EMAIL,
+		REMIND_ME_LATER
+	}
 	
 	public static void main(String[] args){
 		try{
@@ -21,30 +23,30 @@ public class Test{
 			anotherQueue = new SimpleJMS(System.getProperty("queue.another.location"));
 			oneMoreQueue = new SimpleJMS(System.getProperty("queue.onemore.location"));
 			
-			//Register event handlers in-line
-			myQueue.registerEventHandler(EVENT_NOTIFY_CLIENT, jmsMsg->{
+			//Register event in-line event handlers
+			myQueue.registerEventHandler(EVENT.NOTIFY_CLIENT, jmsMsg->{
 				System.out.println("EVENT ONE FIRED = " + jmsMsg.getType());
-			}).registerEventHandler(EVENT_SEND_EMAIL, jmsMsg->{
+			}).registerEventHandler(EVENT.SEND_EMAIL, jmsMsg->{
 				System.out.println("EVENT TWO FIRED = " + jmsMsg.getType());
 			});
 			
-			//Register separated event handlers for larger code sets, RemindMeLaterClass implemented lower down in this test class
-			myQueue.registerEventHandler(EVENT_REMIND_ME_LATER, new RemindMeLaterClass());
+			//Register event handlers from external class, primarily for larger classes
+			myQueue.registerEventHandler(EVENT.REMIND_ME_LATER, new RemindMeLaterClass());
 			
 			//Add Messages to Queue, the queue hasn't started here so they will be persisted to disk
-			myQueue.addMessage(new SimpleJMSMessage(EVENT_NOTIFY_CLIENT));
-			myQueue.addMessage(new SimpleJMSMessage(EVENT_SEND_EMAIL));
-			myQueue.addMessage(new SimpleJMSMessage(EVENT_REMIND_ME_LATER, System.currentTimeMillis() + 500));
-			myQueue.addMessage(new SimpleJMSMessage(EVENT_SEND_EMAIL));
+			myQueue.addMessage(new SimpleJMSMessage(EVENT.NOTIFY_CLIENT));
+			myQueue.addMessage(new SimpleJMSMessage(EVENT.SEND_EMAIL));
+			myQueue.addMessage(new SimpleJMSMessage(EVENT.REMIND_ME_LATER, System.currentTimeMillis() + 500));
+			myQueue.addMessage(new SimpleJMSMessage(EVENT.SEND_EMAIL));
 			
 			//Start the Queue
 			myQueue.start();
 			
 			//Add more messages to the Queue
-			myQueue.addMessage(new SimpleJMSMessage(EVENT_NOTIFY_CLIENT,   System.currentTimeMillis() + 100));
-			myQueue.addMessage(new SimpleJMSMessage(EVENT_REMIND_ME_LATER, System.currentTimeMillis() + 5000));
-			myQueue.addMessage(new SimpleJMSMessage(EVENT_NOTIFY_CLIENT,   System.currentTimeMillis() + 200));
-			myQueue.addMessage(new SimpleJMSMessage(EVENT_NOTIFY_CLIENT));
+			myQueue.addMessage(new SimpleJMSMessage(EVENT.NOTIFY_CLIENT,   System.currentTimeMillis() + 100));
+			myQueue.addMessage(new SimpleJMSMessage(EVENT.REMIND_ME_LATER, System.currentTimeMillis() + 5000));
+			myQueue.addMessage(new SimpleJMSMessage(EVENT.NOTIFY_CLIENT,   System.currentTimeMillis() + 200));
+			myQueue.addMessage(new SimpleJMSMessage(EVENT.NOTIFY_CLIENT));
 			
 			//myQueue.stop();
 			

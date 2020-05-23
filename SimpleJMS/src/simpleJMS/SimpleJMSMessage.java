@@ -5,15 +5,15 @@ import java.util.HashMap;
 
 @SuppressWarnings("serial")
 public class SimpleJMSMessage implements Serializable{
-	private String type; //Type of message which corresponds to the Type of SimpleJMSEventHandler registered
+	private Enum<?> eventType; //Type of message which corresponds to the Type of SimpleJMSEventHandler registered
 	private long fireOn; //Date and time in milliseconds when the message should fire
 	private HashMap<String, Object> props = new HashMap<>();
 	
-	public SimpleJMSMessage(String type){
-		this.type = type;
+	public SimpleJMSMessage(Enum<?> eventType){
+		this.eventType = eventType;
 	}
-	public SimpleJMSMessage(String type, long fireOn){
-		this.type = type;
+	public SimpleJMSMessage(Enum<?> eventType, long fireOn){
+		this.eventType = eventType;
 		this.fireOn = fireOn;
 	}
 	
@@ -21,8 +21,8 @@ public class SimpleJMSMessage implements Serializable{
 	/**
 	 * @param type - Type of message which corresponds to the Type of SimpleJMSEventHandler registered
 	 */
-	public SimpleJMSMessage setType(String type){
-		this.type = type;
+	public SimpleJMSMessage setType(Enum<?> eventType){
+		this.eventType = eventType;
 		return this; 
 	}
 	/**
@@ -38,8 +38,8 @@ public class SimpleJMSMessage implements Serializable{
 	}
 
 	//GETTERS
-	public String getType(){
-		return type;
+	public Enum<?> getType(){
+		return eventType;
 	}
 	public long getFireOn(){
 		return fireOn;
