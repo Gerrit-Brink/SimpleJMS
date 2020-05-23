@@ -61,4 +61,3 @@ class RemindMeLaterClass implements SimpleJMSEventHandler{
 		System.out.println("EVENT THREE FIRED = " + jmsMsg.getEventType());
 	}
 }
-
