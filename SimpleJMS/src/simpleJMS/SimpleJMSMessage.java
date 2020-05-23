@@ -38,7 +38,7 @@ public class SimpleJMSMessage implements Serializable{
 	}
 
 	//GETTERS
-	public Enum<?> getType(){
+	public Enum<?> getEventType(){
 		return eventType;
 	}
 	public long getFireOn(){

@@ -25,9 +25,9 @@ public class Test{
 			
 			//Register event in-line event handlers
 			myQueue.registerEventHandler(EVENT.NOTIFY_CLIENT, jmsMsg->{
-				System.out.println("EVENT ONE FIRED = " + jmsMsg.getType());
+				System.out.println("EVENT ONE FIRED = " + jmsMsg.getEventType());
 			}).registerEventHandler(EVENT.SEND_EMAIL, jmsMsg->{
-				System.out.println("EVENT TWO FIRED = " + jmsMsg.getType());
+				System.out.println("EVENT TWO FIRED = " + jmsMsg.getEventType());
 			});
 			
 			//Register event handlers from external class, primarily for larger classes
@@ -58,6 +58,6 @@ public class Test{
 
 class RemindMeLaterClass implements SimpleJMSEventHandler{
 	public void onMessage(SimpleJMSMessage jmsMsg){
-		System.out.println("EVENT THREE FIRED = " + jmsMsg.getType());
+		System.out.println("EVENT THREE FIRED = " + jmsMsg.getEventType());
 	}
 }

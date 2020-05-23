@@ -87,7 +87,7 @@ public class SimpleJMS{
 				while(fileName != null){
 					Path fullMsgPath = queueLocation.resolve(fileName);
 					SimpleJMSMessage msg = (SimpleJMSMessage)Util.readObject(fullMsgPath);
-					eventHandlers.get(msg.getType()).onMessage(msg);
+					eventHandlers.get(msg.getEventType()).onMessage(msg);
 					Files.delete(fullMsgPath);
 					
 					fileName = messagesToProcess.take();
