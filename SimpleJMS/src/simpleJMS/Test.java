@@ -10,7 +10,7 @@ public class Test{
 	
 	private static SimpleJMS myQueue, anotherQueue, oneMoreQueue;//Define as many as you want, each has it's own execution thread
 	
-	enum EVENT{
+	public enum EVENT{
 		NOTIFY_CLIENT,
 		SEND_EMAIL,
 		REMIND_ME_LATER
