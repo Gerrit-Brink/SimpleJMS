@@ -41,7 +41,7 @@ public class SimpleJMS{
 	
 	private void queueMessage(String fileName) throws InterruptedException{
 		long executeOn = new Long(fileName.substring(0, fileName.indexOf("_")));
-		if(System.currentTimeMillis() >= executeOn){
+		if(executeOn <= System.currentTimeMillis()){
 			msgsToProcess.put(fileName);
 		}else{
 			timer.schedule(new TimerTask(){
